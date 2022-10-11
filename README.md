@@ -1,1 +1,1 @@
-# NewRepo
+A project managementt system used to manage student projects at the copperbelt university. To computerise the traditional way of manging student projects this system was developed.

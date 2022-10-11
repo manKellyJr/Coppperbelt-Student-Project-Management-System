@@ -1,0 +1,47 @@
+﻿@inherits LayoutComponentBase
+
+@*<MudThemeProvider Theme="_themeManager.Theme" />*@
+
+<MudLayout>
+    <MudAppBar Color="Color.Dark" Class="hideWhenPrint">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+            <MudImage Width="30" Height="40" Src="images/CBULOGO.png" Alt="Cbu Logo" />
+        <MudText Typo="Typo.h5" Class="ml-3">CBU SPROMAS</MudText>
+            <MudSpacer />
+    </MudAppBar>
+ @*   <MudDrawer @bind-Open="_drawerOpen" Elevation="_themeManager.DrawerElevation" ClipMode="_themeManager.DrawerClipMode">*@
+    <MudDrawer Class="hideWhenPrint" @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h5" Class="mt-1">MENU</MudText>
+        </MudDrawerHeader>
+        <br />
+        <NavMenu />
+    </MudDrawer>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-6 pt-6">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    [CascadingParameter]
+    Task<AuthenticationState> AuthenticationStateTask { get; set; }
+    ClaimsPrincipal claimsPrincipal = new ClaimsPrincipal();
+    protected override async Task OnInitializedAsync()
+    {
+        claimsPrincipal = (await AuthenticationStateTask).User;
+        if (!claimsPrincipal.Identity.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login");
+        }
+    }
+    bool _drawerOpen = true;
+
+    void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+}
+
+

@@ -1,0 +1,218 @@
+@page "/projects"
+@using ProjectManagementSystem.Models
+@using System
+@using System.Linq
+@using static MudBlazor.CategoryTypes
+@*@using BlazorInputFile*@
+@inject MudBlazor.ISnackbar snackBar
+@inject IDialogService DialogService
+@inject IJSRuntime JsRuntime
+@attribute [Authorize]
+
+<h3>Projects</h3>
+<MudCard Elevation="25">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">Add / Edit Projects</MudText>
+            <MudText Typo="Typo.h6">Count: @count</MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudTextField @bind-Value="project.ProjectName" Label="Title Of Project" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+        <MudTextField @bind-Value="project.ProjectDescritpion" Lines="6" Label="Enter Project Description" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+        <MudTextField @bind-Value="project.Abstract" Lines="6" Label="Enter Project Abstract" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+        <MudTextField @bind-Value="project.Keywords" Label="Enter Project Keywords" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+        <MudDatePicker Style="width:35%" Label="Start Date" Editable="true" @bind-Date="project.StartDate" Placeholder="Select Date" />
+        <MudSelect T="int" Label="Select Student" @bind-Value="project.StudentId">
+            @foreach (var student in students)
+            {
+                <MudSelectItem T="int" Value="@student.StudentId">@student.FirstName@student.LastName</MudSelectItem>
+            }
+        </MudSelect>
+        <br />
+        @*<InputFile id="fileInput" OnChange="HandlefileSelected"></InputFile>*@
+        <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="Add">Add Project</MudButton>
+    </MudCardContent>
+</MudCard>
+<br />
+
+<MudTable RowsPerPage="5" @ref="@_table" Hover="true" Breakpoint="Breakpoint.Sm" LoadingProgressColor="Color.Info" Style="color: white" Elevation="25" Items="GetAll()" Filter="new Func<Project, bool>(Search)" @bind-project="project">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Project</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="searchString" Placeholder="Search for Projects..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Project Title</MudTh>
+        <MudTh>Project Description</MudTh>
+        <MudTh>Abstract</MudTh>
+        <MudTh>Document</MudTh>
+        <AuthorizeView Context="Authcontext" Roles="Coordinator, Supervisor">
+            <Authorized>
+        <MudTh>Actions</MudTh>
+        </Authorized>
+        </AuthorizeView>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Project Title">@context.ProjectName</MudTd>
+        <MudTd DataLabel="Project Description Code">@context.ProjectDescritpion</MudTd>
+        <MudTd DataLabel="Project Abstract">@context.Abstract</MudTd>
+        <InputFile id="fileInput" OnChange="(e)=>UploadFiles(e,context.ProjectId)" accept=".pdf" hidden />
+        <MudTd DataLabel="Document">
+            <AuthorizeView Context="AuthContext" Roles="Student">
+                <Authorized>
+                    <MudFab HtmlTag="label" Color="Color.Success" Icon="@Icons.Filled.AttachFile" Size="Size.Small" for="fileInput" />
+                </Authorized>
+            </AuthorizeView>
+            <MudTd>
+                @if (!string.IsNullOrEmpty(context.FileName))
+                {
+                    <MudIconButton OnClick="@(()=>Download(context))" Icon="@Icons.Material.Rounded.Download" Color="Color.Success" />
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.FileDownloadOff" Color="Color.Error" />
+                }
+            </MudTd>
+        </MudTd>
+        <AuthorizeView Context="Authcontext" Roles="Coordinator, Supervisor">
+            <Authorized>
+                <MudTd DataLabel="Actions">
+            <MudFab @onclick="@(()=>Update(context))" Color="Color.Primary" Icon="@Icons.Material.Filled.Edit" Size="Size.Small" IconSize="Size.Small" />
+            <MudFab @onclick="@(()=>Delete(context))" Color="Color.Secondary" Icon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small" />
+        </MudTd>
+            </Authorized>
+        </AuthorizeView>
+    </RowTemplate>
+    <PagerContent>
+        <MudPagination ShowFirstButton="true" ShowLastButton="true" SelectedChanged="PageChanged" Count="@((_table.GetFilteredItemsCount() + _table.RowsPerPage - 1) / _table.RowsPerPage)" Class="pa-4" />
+    </PagerContent>
+</MudTable>
+
+
+@code {
+    private string searchString = "";
+    private int count;
+    private Project project = new Project();
+    private Student student = new Student();
+    private IEnumerable<Project> projects = new List<Project>();
+    private IEnumerable<Student> students = new List<Student>();
+    //IFileListEntry file;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        students = studentService.GetAll();
+        projects = projectService.GetAll();
+        count = projects.Count();
+    }
+
+    private bool Search(Project project)
+    {
+        if (string.IsNullOrWhiteSpace(searchString)) return true;
+        if (project.ProjectName.Contains(searchString, StringComparison.OrdinalIgnoreCase)
+            || project.Keywords.Contains(searchString, StringComparison.OrdinalIgnoreCase)
+            || project.Student.FirstName.Contains(searchString, StringComparison.OrdinalIgnoreCase)
+            || project.ProjectDescritpion.Contains(searchString, StringComparison.OrdinalIgnoreCase)
+            || project.Student.LastName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private IEnumerable<Project> GetAll()
+    {
+        projects = projectService.GetProjectDetails();
+        return projects;
+    }
+
+    private void Add()
+    {
+        if (project.ProjectId == 0)
+        {
+            projectService.Add(project);
+        }
+        else
+        {
+            projectService.Update(project);
+        }
+        project = new Project();
+        snackBar.Add("Project Added.", Severity.Success);
+        GetAll();
+    }
+
+
+    private void Update(Project record)
+    {
+        project = record;
+        StateHasChanged();
+    }
+
+    private async Task Delete(Project record)
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure?");
+        if (confirmed)
+        {
+            projectService.Delete(record);
+            snackBar.Add("Project Deleted.", Severity.Success);
+            GetAll();
+        }
+    }
+
+    //async void HandlefileSelected(IFileListEntry[] files, int ProjectId)
+    //{
+    //    var attach = await FileSender(files.FirstOrDefault());
+    //    projectService.UploadPdf(ProjectId, attach);
+    //}
+    //public async Task<byte[]> FileSender(IFileListEntry file)
+    //{
+    //    using (var ms = new System.IO.MemoryStream())
+    //    {
+    //        await file.Data.CopyToAsync(ms);
+    //        return ms.ToArray();
+    //    }
+    //}
+
+    private void DownloadPdf(int ProjectId)
+    {
+        //var project = projects.FirstOrDefault(x => x.ProjectId == ProjectId);
+        //JsRuntime.InvokeVoidAsync("saveAsFile", "PdfFileName1", project.Attachment);
+        //GetAll();
+    }
+
+    //Uploading PDF
+
+    private async void UploadFiles(InputFileChangeEventArgs e, int projectId)
+    {
+        if (e.File.Size > 20000000)
+        {
+            snackBar.Add("File size cannot exceed 20mbs", Severity.Error);
+            return;
+        }
+        var ms = new MemoryStream();
+        var fs = e.File.OpenReadStream(20000000);
+        await fs.CopyToAsync(ms);
+        var uploaded = projectService.UploadPdf(projectId, ms, e.File.Name);
+        if (uploaded)
+            snackBar.Add("File uploaded successfully.");
+    }
+
+   
+    async void Download(Project model)
+    {
+        var path = Path.Combine(env.WebRootPath, "files", model.FileName);
+        var fileStream = new FileStream(path: path, FileMode.Open, FileAccess.ReadWrite);
+        var ms = new MemoryStream();
+        await fileStream.CopyToAsync(ms);
+        await javaScript.InvokeAsync<object>("saveAsFile", $"{model.Student.StudentName}_Project{Path.GetExtension(path)}", Convert.ToBase64String(ms.ToArray()));
+    }
+
+    private MudTable<Project> _table;
+
+    private void PageChanged(int i)
+    {
+        _table.NavigateTo(i - 1);
+    }
+
+}

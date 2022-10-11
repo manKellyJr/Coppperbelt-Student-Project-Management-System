@@ -1,0 +1,61 @@
+﻿
+<MudCard>
+    <MudCardHeader>
+        <CardHeaderAvatar>
+            <MudAvatar Color="Color.Primary">@Model.Student.FirstName.First()</MudAvatar>
+        </CardHeaderAvatar>
+        <CardHeaderContent>
+            <MudText Typo="Typo.body1">@Model.Student.StudentName</MudText>
+            <MudText Typo="Typo.body2">@Model.Student.Programme.ProgrammeName</MudText>
+            <MudText Typo="Typo.caption">@Model.StartDate.Value.Year</MudText>
+        </CardHeaderContent>
+        <CardHeaderActions>
+            <MudIconButton Icon="@Icons.Material.Filled.Share" Color="Color.Default" />
+        </CardHeaderActions>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudGrid Spacing="4">
+            <MudItem xs="12">
+                <MudPaper Class="p-3" Elevation="25" Width="100%">
+                    <MudText Typo="Typo.h3"><strong>@Model.ProjectName</strong></MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12">
+                <MudPaper Elevation="25" Width="100%" Class="m-6 p-3 overflow-auto">
+                    <MudText Align="Align.Left" Typo="Typo.h5">Abstract</MudText>
+                    <p style="color: black" class="mt-4">
+                       @Model.Abstract
+                    </p>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <MudDivider />
+
+    </MudCardContent>
+    <MudCardActions>
+        @if(!string.IsNullOrEmpty(Model.FileName))
+        {
+            <MudIconButton OnClick="Download" Icon="@Icons.Material.Rounded.Download" Color="Color.Success" />
+        }
+        else
+        {
+            <MudIcon Icon="@Icons.Material.Filled.FileDownloadOff" Color="Color.Error" />
+        }       
+    </MudCardActions>
+</MudCard>
+@code {
+
+    [Parameter]
+    public Project Model { get; set; }
+
+    async void Download()
+    {
+        var path = Path.Combine(env.WebRootPath, "files", Model.FileName);
+        var fileStream = new FileStream(path: path, FileMode.Open, FileAccess.ReadWrite);
+        var ms = new MemoryStream();
+        await fileStream.CopyToAsync(ms);
+        await javaScript.InvokeAsync<object>("saveAsFile", $"{Model.Student.StudentName}_Project{Path.GetExtension(path)}", Convert.ToBase64String(ms.ToArray()));
+    }
+
+}

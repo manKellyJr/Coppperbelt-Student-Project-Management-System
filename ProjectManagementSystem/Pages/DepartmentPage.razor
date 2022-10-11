@@ -1,0 +1,150 @@
+﻿@page "/departments"
+@using ProjectManagementSystem.Models
+@using System
+@using System.Linq
+@using static MudBlazor.CategoryTypes
+@using Microsoft.AspNetCore.Identity
+@inject MudBlazor.ISnackbar snackBar
+@inject IDialogService DialogService
+@inject IJSRuntime JsRuntime
+@attribute [Authorize]
+
+
+<AuthorizeView Context="AuthContext" Roles="Coordinator, Administrator">
+    <Authorized>
+<h3>Departments</h3>
+
+
+<MudCard Elevation="25">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">Add / Edit Departments</MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudTextField @bind-Value="department.DepartmentName" Label="Name Of Department" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+        <MudSelect T="int" Label="Select School" @bind-Value="department.SchoolId">
+            @foreach (var school in schools)
+            {
+                <MudSelectItem T="int" Value="@school.SchoolId">@school.SchoolName</MudSelectItem>
+            }
+        </MudSelect>
+        <br />
+        <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="Add">Add Department</MudButton>
+    </MudCardContent>
+</MudCard>
+<br />
+
+<MudTable RowsPerPage="5" @ref="@_table" Hover="true" Breakpoint="Breakpoint.Sm" LoadingProgressColor="Color.Info" Style="color: white" Elevation="25" Items="GetAll()" Filter="new Func<Department, bool>(Search)" @bind-department="department">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Department</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="searchString" Placeholder="Search for Departments..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Department</MudTh>
+        <MudTh>School</MudTh>
+        <MudTh>Programmes</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Department">@context.DepartmentName</MudTd>
+        <MudTd DataLabel="School">@context.School.SchoolName</MudTd>
+        <MudTd DataLabel="Programmes">
+            @if (context.Programmes.Any())
+            {
+                foreach (var programmes in context.Programmes)
+                {
+                    <MudSelectItem T="int" Value="@programme.ProgrammeId">@programme.ProgrammeName</MudSelectItem>
+                }
+
+            }
+        </MudTd>
+
+        <MudTd DataLabel="Actions">
+            <MudFab @onclick="@(()=>Update(context))" Color="Color.Primary" Icon="@Icons.Material.Filled.Edit" Size="Size.Small" IconSize="Size.Small" />
+            <MudFab @onclick="@(()=>Delete(context))" Color="Color.Secondary" Icon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small" />
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudPagination ShowFirstButton="true" ShowLastButton="true" SelectedChanged="PageChanged" Count="@((_table.GetFilteredItemsCount() + _table.RowsPerPage - 1) / _table.RowsPerPage)" Class="pa-4" />
+    </PagerContent>
+</MudTable>
+</Authorized>
+</AuthorizeView>
+
+
+@code {
+    private string searchString = "";
+    private int count;
+    private Department department = new Department();
+    private Programme programme = new Programme();
+    private IEnumerable<Department> departments = new List<Department>();
+    private IEnumerable<Programme> programmes = new List<Programme>();
+    private IEnumerable<School> schools = new List<School>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        programmes = programmeService.GetAll();
+        schools = schoolService.GetAll();
+        departments = departmentService.GetDepartmentDetails();
+        count = departments.Count();
+
+    }
+
+    private bool Search(Department department)
+    {
+        if (string.IsNullOrWhiteSpace(searchString)) return true;
+        if (department.DepartmentName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private IEnumerable<Department> GetAll()
+    {
+        departments = departmentService.GetDepartmentDetails();
+        return departments;
+    }
+
+    private void Add()
+    {
+        if(department.DepartmentId == 0)
+        {
+            departmentService.Add(department);
+        }
+        else
+        {
+            departmentService.Update(department);
+        }
+        department = new Department();
+        snackBar.Add("Department Added.", Severity.Success);
+        GetAll();
+    }
+
+    private void Update(Department record)
+    {
+        department = record;
+        StateHasChanged();
+    }
+
+    private async Task Delete(Department record)
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure?");
+        if (confirmed)
+        {
+            departmentService.Delete(record);
+            snackBar.Add("Department Deleted.", Severity.Success);
+            GetAll();
+        }
+    }
+
+    private MudTable<Department> _table;
+
+    private void PageChanged(int i)
+    {
+        _table.NavigateTo(i - 1);
+    }
+
+}

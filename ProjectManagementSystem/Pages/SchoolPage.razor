@@ -1,0 +1,122 @@
+﻿@page "/schools"
+@using ProjectManagementSystem.Models
+@using System
+@using System.Linq
+@using static MudBlazor.CategoryTypes
+@inject MudBlazor.ISnackbar snackBar
+@inject IDialogService DialogService
+@inject IJSRuntime JsRuntime
+@attribute [Authorize]
+
+<AuthorizeView Context="AuthContext" Roles="Coordinator, Administrator">
+    <Authorized>
+<h3>Schools</h3>
+    <MudCard Elevation="25">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Add / Edit Schools</MudText>
+                <MudText Typo="Typo.h6">Count: @NumberOfSchools</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudTextField @bind-Value="school.SchoolName" Label="Name Of School" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+            <MudTextField @bind-Value="school.Campus" Label="Name Of School" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+            <br />
+            <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="Add">Add School</MudButton>
+        </MudCardContent>
+    </MudCard>
+<br />
+
+    <MudTable RowsPerPage="5" @ref="@_table" Hover="true" Breakpoint="Breakpoint.Sm" LoadingProgressColor="Color.Info" Style="color: white" Elevation="25" Items="GetAll()" Filter="new Func<School, bool>(Search)" @bind-school="school">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Schools</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="searchString" Placeholder="Search for Schools..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        </ToolBarContent>
+        <HeaderContent>
+            <MudTh>School</MudTh>
+            <MudTh>Campus</MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="School">@context.SchoolName</MudTd>
+            <MudTd DataLabel="School">@context.Campus</MudTd>
+            <MudTd DataLabel="Actions">
+                <MudFab @onclick="@(()=>Update(context))" Color="Color.Primary" Icon="@Icons.Material.Filled.Edit" Size="Size.Small" IconSize="Size.Small" />
+                <MudFab @onclick="@(()=>Delete(context))" Color="Color.Secondary" Icon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small" />
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudPagination ShowFirstButton="true" ShowLastButton="true" SelectedChanged="PageChanged" Count="@((_table.GetFilteredItemsCount() + _table.RowsPerPage - 1) / _table.RowsPerPage)" Class="pa-4" />
+        </PagerContent>
+    </MudTable>
+    </Authorized>
+    </AuthorizeView>
+
+@code {
+    private string searchString = "";
+    private School school = new School();
+    private IEnumerable<School> schools = new List<School>();
+    private int NumberOfSchools;
+    protected override async Task OnInitializedAsync()
+    {
+        schools = schoolService.GetAll();
+        NumberOfSchools = schools.Count();
+    }
+
+    private bool Search(School school)
+    {
+        if (string.IsNullOrWhiteSpace(searchString)) return true;
+        if (school.SchoolName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private IEnumerable<School> GetAll()
+    {
+        schools = schoolService.GetAll();
+        return schools;
+    }
+
+    private void Add()
+    {
+        if(school.SchoolId == 0)
+        {
+            schoolService.Add(school);
+        }
+        else
+        {
+            schoolService.Update(school);
+        }
+        school = new School();
+        snackBar.Add("School Added.", Severity.Success);
+        GetAll();
+    }
+
+    private void Update(School record)
+    {
+        school = record;
+        StateHasChanged();
+    }
+
+    private async Task Delete(School record)
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure?");
+        if (confirmed)
+        {
+            schoolService.Delete(record);
+            snackBar.Add("School Deleted.", Severity.Success);
+            GetAll();
+        }
+    }
+
+    private MudTable<School> _table;
+
+    private void PageChanged(int i)
+    {
+        _table.NavigateTo(i - 1);
+    }
+
+}

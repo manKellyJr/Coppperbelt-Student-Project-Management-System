@@ -1,0 +1,188 @@
+﻿@page "/"
+@layout HLayout
+@using Microsoft.AspNetCore.Components.Authorization
+@attribute [AllowAnonymous]
+<div class="s004">
+    <form>
+        @if (!viewProject)
+        {
+            <fieldset>
+                <center>
+                    <MudImage Width="60" Height="80" Src="images/CBULOGO.png" Alt="Cbu Logo" />
+                </center>
+                <legend>SEARCH FOR PROJECTS</legend>
+                <div class="inner-form">
+                    <MudTextField Immediate ValueChanged="OnSearch" AdornmentIcon="@Icons.Material.Outlined.Search" T="string" Adornment="Adornment.End" FullWidth Label="Search for Projects" Variant="Variant.Outlined" />
+                </div>
+            </fieldset>
+            <div class="suggestion-wrap">
+                <div style="font-size:large; color:purple">Have an account?&nbsp;<span><a style="font-size:large; color:blue" href="login">Login here</a></span> </div>
+            </div>
+            @if (searching)
+            {
+                <MudPaper Class="m-6 mt-16 pa-4 rounded-8" Elevation="25">
+                    @if (!searchResults.Any())
+                    {
+                        <MudAlert Dense Severity="Severity.Info">No results found.</MudAlert>
+                    }
+                    else
+                    {
+                        <MudGrid Spacing="3">
+                            @foreach (var item in searchResults)
+                            {
+                                <MudItem xs="12">
+                                    <MudCard>
+                                        <MudCardHeader>
+                                            <CardHeaderContent>
+                                                <MudText Typo="Typo.h6">@item.ProjectName</MudText>
+                                            </CardHeaderContent>
+                                            <CardHeaderActions>
+                                                <MudIconButton Icon="@Icons.Material.Filled.Favorite" Color="Color.Secondary" />
+                                            </CardHeaderActions>
+                                        </MudCardHeader>
+                                        <MudCardContent>
+                                            <MudText>By @item.Student.StudentName</MudText>
+                                            <MudText Typo="Typo.body2">@item.Student.Programme.ProgrammeName</MudText>
+                                        </MudCardContent>
+                                        <MudCardActions>
+                                            <MudButton OnClick="()=>View(item)" Variant="Variant.Text" Color="Color.Primary">See More</MudButton>
+                                        </MudCardActions>
+                                    </MudCard>
+                                </MudItem>
+                            }
+                        </MudGrid>
+                    }
+                </MudPaper>
+            }
+        }
+        else
+        {
+            <MudGrid Spacing="6">
+                <MudItem Class="mb-6" xs="12">
+                    <MudButton OnClick="()=> {viewProject = false;selectedProject=new(); StateHasChanged();}" StartIcon="@Icons.Material.Filled.Close" Color="Color.Error">Close</MudButton>
+                </MudItem>
+                <ViewProjectCard Model="@selectedProject"/>
+            </MudGrid>
+        }
+    </form>
+</div>
+@code {
+    HashSet<Project> projects = new();
+    List<Project> searchResults = new();
+    bool searching;
+    Project selectedProject = new();
+    protected override void OnInitialized()
+    {
+        projects = new(projectService.GetProjectDetails());
+    }
+    bool viewProject;
+    void View(Project record)
+    {
+        selectedProject = record;
+        viewProject = true;
+        StateHasChanged();
+    }
+    void OnSearch(string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+        {
+            searching = false;
+            return;
+        }
+        searching = true;
+        searchResults = projects.Where(project => project.ProjectName.Contains(searchString, StringComparison.OrdinalIgnoreCase)
+            || project.Keywords.Contains(searchString, StringComparison.OrdinalIgnoreCase)
+            || project.Student.FirstName.Contains(searchString, StringComparison.OrdinalIgnoreCase)
+            || project.ProjectDescritpion.Contains(searchString, StringComparison.OrdinalIgnoreCase)
+            || project.Student.LastName.Contains(searchString, StringComparison.OrdinalIgnoreCase)).ToList();
+        StateHasChanged();
+    }
+}
+<style>
+    html {
+        line-height: 1.15;
+        -ms-text-size-adjust: 100%;
+        -webkit-text-size-adjust: 100%
+    }
+
+    body {
+        margin: 0;
+        background-color: lightgray
+    }
+
+    article, aside, footer, header, nav, section {
+        display: block
+    }
+
+    h1 {
+        font-size: 2em;
+        margin: .67em 0
+    }
+
+
+    fieldset {
+        padding: .35em .75em .625em
+    }
+
+    legend {
+        box-sizing: border-box;
+        color: blueviolet;
+        display: table;
+        max-width: 100%;
+        padding: 0;
+        white-space: normal
+    }
+
+
+    fieldset {
+        margin: 0;
+        padding: 0;
+        -webkit-margin-start: 0;
+        -webkit-margin-end: 0;
+        -webkit-padding-before: 0;
+        -webkit-padding-start: 0;
+        -webkit-padding-end: 0;
+        -webkit-padding-after: 0;
+        border: 0
+    }
+
+    legend {
+        margin: 0;
+        padding: 0;
+        display: block;
+        -webkit-padding-start: 0;
+        -webkit-padding-end: 0
+    }
+
+    .s004 {
+        min-height: 100vh;
+        display: -ms-flexbox;
+        display: flex;
+        -ms-flex-pack: center;
+        justify-content: center;
+        -ms-flex-align: center;
+        align-items: center;
+        font-family: poppins,sans-serif;
+        background-color: white;
+        padding: 15px
+    }
+
+        .s004 form {
+            width: 100%;
+            max-width: 790px
+        }
+
+            .s004 form legend {
+                font-size: 36px;
+                color: blueviolet;
+                font-weight: 800;
+                text-align: center;
+                margin-bottom: 50px
+            }
+
+            .s004 form .inner-form {
+                width: 100%;
+                margin-bottom: 17px
+            }
+
+</style>

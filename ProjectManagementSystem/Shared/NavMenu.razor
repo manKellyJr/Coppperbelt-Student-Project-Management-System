@@ -1,0 +1,50 @@
+﻿<MudNavMenu Color=Color.Dark Margin=Margin.None Class="hideWhenPrint">
+    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
+    <AuthorizeView Context="AuthContext" Roles="Coordinator, Administrator">
+    <Authorized>
+    <MudNavLink Href="schools" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.School">Schools</MudNavLink>
+    </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Context="AuthContext" Roles="Coordinator, Administrator">
+    <Authorized>
+    <MudNavLink Href="departments" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Category">Departments</MudNavLink>
+    </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Context="AuthContext" Roles="Coordinator, Supervisor, Administrator">
+    <Authorized>
+    <MudNavLink Href="programmes" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Book">Programmes</MudNavLink>
+    </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Context="AuthContext" Roles="Coordinator, Supervisor, Administrator">
+    <Authorized>
+    <MudNavLink Href="courses" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Bookmark">Courses</MudNavLink>
+    </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Context="AuthContext" Roles="Coordinator, Administrator">
+    <Authorized>
+    <MudNavLink Href="supervisors" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.People">Supervisors</MudNavLink>
+    </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Context="AuthContext" Roles="Administrator">
+    <Authorized>
+    <MudNavLink Href="coordinators" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.People">Coordinators</MudNavLink>
+    </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Context="AuthContext" Roles="Coordinator, Supervisor, Administrator">
+    <Authorized>
+    <MudNavLink Href="students" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.People">Students</MudNavLink>
+    </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Context="AuthContext" Roles="Coordinator, Supervisor, Administrator">
+    <Authorized>
+    <MudNavLink Href="groups" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.People">Groups</MudNavLink>
+    </Authorized>
+    </AuthorizeView>
+    <MudNavLink Href="projects" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Work">Projects</MudNavLink>
+    <AuthorizeView Context="AuthContext" Roles="Coordinator, Supervisor">
+    <Authorized>
+    <MudNavLink Href="assessments" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.DoneAll">Project Assessment</MudNavLink>
+    </Authorized>
+    </AuthorizeView>
+    <MudNavLink Href="login" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Logout">Sign Out</MudNavLink>
+</MudNavMenu>

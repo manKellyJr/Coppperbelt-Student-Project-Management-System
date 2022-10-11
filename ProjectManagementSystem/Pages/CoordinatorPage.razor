@@ -1,0 +1,150 @@
+﻿@page "/coordinators"
+@using ProjectManagementSystem.Models
+@using System
+@using System.Linq
+@using static MudBlazor.CategoryTypes
+@inject MudBlazor.ISnackbar snackBar
+@inject IDialogService DialogService
+@inject IJSRuntime JsRuntime
+@attribute [Authorize]
+
+<AuthorizeView Context="AuthContext" Roles="Administrator">
+    <Authorized>
+<h3>Coordniator</h3>
+<MudCard Elevation="25">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">Add / Edit Coordinator</MudText>
+            <MudText Typo="Typo.h6">Count: @count</MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudTextField @bind-Value="coordinator.FirstName" Label="First Name" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+        <MudTextField @bind-Value="coordinator.LastName" Label="Last Name" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+        <MudTextField @bind-Value="coordinator.AcademicYear" Label="Year" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+        <MudTextField @bind-Value="email" Label="Email" Variant="Variant.Text" InputMode="InputMode.email" Margin="Margin.Normal"></MudTextField>
+        <MudSelect T="int" Label="Select School" @bind-Value="coordinator.SchoolId">
+            @foreach (var school in schools)
+            {
+                <MudSelectItem T="int" Value="@school.SchoolId">@school.SchoolName</MudSelectItem>
+            }
+        </MudSelect>
+        <br />
+        <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="Add">Add Coordinator</MudButton>
+    </MudCardContent>
+</MudCard>
+<br />
+
+<MudTable RowsPerPage="5" @ref="@_table" Hover="true" Breakpoint="Breakpoint.Sm" LoadingProgressColor="Color.Info" Style="color: white" Elevation="25" Items="GetAll()" Filter="new Func<Coordinator, bool>(Search)" @bind-coordinator="coordinator">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Coordniator</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="searchString" Placeholder="Search for Coordinators..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Name</MudTh>
+        <MudTh>School</MudTh>
+        <MudTh>Year</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Name">@context.CoordinatorName</MudTd>
+        <MudTd DataLabel="School">@context.School.SchoolName</MudTd>
+        <MudTd DataLabel="Year">@context.AcademicYear</MudTd>
+        <MudTd DataLabel="Actions">
+            <MudFab @onclick="@(()=>Update(context))" Color="Color.Primary" Icon="@Icons.Material.Filled.Edit" Size="Size.Small" IconSize="Size.Small" />
+            <MudFab @onclick="@(()=>Delete(context))" Color="Color.Secondary" Icon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small" />
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudPagination ShowFirstButton="true" ShowLastButton="true" SelectedChanged="PageChanged" Count="@((_table.GetFilteredItemsCount() + _table.RowsPerPage - 1) / _table.RowsPerPage)" Class="pa-4" />
+    </PagerContent>
+</MudTable>
+</Authorized>
+</AuthorizeView>
+
+@code {
+    private string searchString = "";
+    private int count;
+    private Coordinator coordinator = new Coordinator();
+    private School school = new School();
+    private IEnumerable<Coordinator> coordinators = new List<Coordinator>();
+    private IEnumerable<School> schools = new List<School>();
+    string email;
+
+    protected override async Task OnInitializedAsync()
+    {
+        schools = schoolService.GetAll();
+        coordinators = coordinatorService.GetCoordinatorDetails();
+        count = coordinators.Count();
+    }
+
+    private bool Search(Coordinator coordinator)
+    {
+        if (string.IsNullOrWhiteSpace(searchString)) return true;
+        if (coordinator.FirstName.Contains(searchString, StringComparison.OrdinalIgnoreCase)
+            ||coordinator.LastName.Contains(searchString, StringComparison.OrdinalIgnoreCase)
+            ||coordinator.School.SchoolName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private IEnumerable<Coordinator> GetAll()
+    {
+        coordinators = coordinatorService.GetCoordinatorDetails();
+        return coordinators;
+    }
+
+    private async void Add()
+    {
+        if (string.IsNullOrEmpty(email))
+        {
+            snackBar.Add("email is required.", Severity.Error);
+            return;
+        }
+        var user = new RegisterRequest
+        {
+                Email = email,
+                UserName = email,
+                Password = "test1234",
+                Role = "Coordinator"
+
+        };
+        var id = await userService.AddUser(user);
+        if (id > 0)
+        {
+            coordinator.UserId = id;
+            coordinatorService.Add(coordinator);
+            coordinator = new Coordinator();
+            snackBar.Add("Coordinator Added.", Severity.Success);
+            GetAll();
+        }
+    }
+
+    private void Update(Coordinator record)
+    {
+        coordinator = record;
+        StateHasChanged();
+    }
+
+    private async Task Delete(Coordinator record)
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure?");
+        if (confirmed)
+        {
+            coordinatorService.Delete(record);
+            snackBar.Add("Coordniator Deleted.", Severity.Success);
+            GetAll();
+        }
+    }
+
+    private MudTable<Coordinator> _table;
+
+    private void PageChanged(int i)
+    {
+        _table.NavigateTo(i - 1);
+    }
+
+}

@@ -1,0 +1,255 @@
+﻿@page "/assessments"
+@using ProjectManagementSystem.Models
+@using System
+@using System.Linq
+@using static MudBlazor.CategoryTypes
+@*@using BlazorInputFile*@
+@inject MudBlazor.ISnackbar snackBar
+@inject IDialogService DialogService
+@inject IJSRuntime JsRuntime
+@attribute [Authorize]
+
+<h3>ProjectAssessments</h3>
+<MudCard Elevation="25">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Align="Align.Center" Typo="Typo.h6">PROJECT PRESENTATION EVALUATION SHEET</MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+
+        <MudSimpleTable Hover Bordered FixedHeader Striped>
+            <col width=250/>        
+            <col width=100/>
+            <col width=100/>
+            <col width=100/>
+            <col width=100/>
+            <col width=100/>
+            <col width=100/>
+            <col width=100/>
+            <thead>
+                <tr>
+                    <th>Student</th>               
+                    <th>Intellectual Quality</th>
+                    <th>Knowledge of Research</th>
+                    <th>Quality of Presentation</th>
+                    <th>Response to Questions</th>                
+                    <th>Structure of Presentation</th>
+                    <th>Referencing</th>
+                    <th>TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <MudSelect T="Project" @bind-Value="project" Variant="Variant.Outlined" Label="Student">
+                            <MudSelectItem ReadOnly="@editing" Immediate T="Project" Value="default">Select Student</MudSelectItem>
+                            @foreach (var item in projects)
+                            {
+                                <MudSelectItem T="Project" Value="item">@item?.Student?.StudentName : @item?.Student?.StudentIDNumber</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </td>                    
+                    <td>
+                        <MudSelect T="Grade" @bind-Value="assessment.IntellectualQuality" Variant="Variant.Outlined">
+                            @foreach (Grade item in Enum.GetValues(typeof(Grade)))
+                            {
+                                <MudSelectItem T="Grade" Value="item">@item.ToString()</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </td>
+                    <td>
+                        <MudSelect T="Grade" @bind-Value="assessment.KnowledgeOfResearch" Variant="Variant.Outlined">
+                            @foreach (Grade item in Enum.GetValues(typeof(Grade)))
+                            {
+                                <MudSelectItem T="Grade" Value="item">@item.ToString()</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </td>
+                    <td>
+                        <MudSelect T="Grade" @bind-Value="assessment.QualityOfPresentation" Variant="Variant.Outlined">
+                            @foreach (Grade item in Enum.GetValues(typeof(Grade)))
+                            {
+                                <MudSelectItem T="Grade" Value="item">@item.ToString()</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </td>
+                    <td>
+                        <MudSelect T="Grade" @bind-Value="assessment.ResponseToQuestions" Variant="Variant.Outlined">
+                            @foreach (Grade item in Enum.GetValues(typeof(Grade)))
+                            {
+                                <MudSelectItem T="Grade" Value="item">@item.ToString()</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </td>
+                    <td>
+                        <MudSelect T="SecondGrade" @bind-Value="assessment.StructureOfPresentation" Variant="Variant.Outlined">
+                            @foreach (SecondGrade item in Enum.GetValues(typeof(SecondGrade)))
+                            {
+                                <MudSelectItem T="SecondGrade" Value="item">@item.ToString()</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </td>
+                    <td>
+                        <MudSelect T="SecondGrade" @bind-Value="assessment.ReferencingAndAppendices" Variant="Variant.Outlined">
+                            @foreach (SecondGrade item in Enum.GetValues(typeof(SecondGrade)))
+                            {
+                                <MudSelectItem T="SecondGrade" Value="item">@item.ToString()</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </td>
+                    <td>
+                        <MudField ReadOnly Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="Marks">
+                            @assessment.Total
+                        </MudField>
+                    </td>
+                </tr>
+
+            </tbody>
+        </MudSimpleTable>
+        <MudButton Variant="Variant.Filled" Disabled="editing" Color="Color.Info" OnClick="Add">Save</MudButton>
+    </MudCardContent>
+</MudCard>
+<br />
+
+<MudTable RowsPerPage="5" Striped Bordered @ref="@_table" Hover="true" Breakpoint="Breakpoint.Sm" LoadingProgressColor="Color.Info" Style="color: white" Elevation="25" Items="assessments" Filter="new Func<ProjectAssessment, bool>(Search)" @bind-project="project">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Project Assessment</MudText>
+        <MudSpacer />
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Programme</MudTh>
+        <MudTh>Date</MudTh>
+        <MudTh>Student</MudTh>
+        <MudTh>Project</MudTh>
+        <MudTh>Marker</MudTh>
+        <MudTh>Marks</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>@context.Project?.Student?.Programme.ProgrammeName</MudTd>
+        <MudTd>@context.Date.ToString("dd MMM yyyy H:mm")</MudTd>
+        <MudTd>@context.Project.Student.StudentName</MudTd>
+        <MudTd>@context.Project.ProjectName</MudTd>
+        <MudTd>@context.MarkedBy</MudTd>
+        <MudTd>@context.Total</MudTd>
+        <MudTd DataLabel="Actions">
+            <MudFab @onclick="@(()=>Update(context))" Color="Color.Primary" Icon="@Icons.Material.Filled.ViewAgenda" Size="Size.Small" IconSize="Size.Small" />
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudPagination ShowFirstButton="true" ShowLastButton="true" SelectedChanged="PageChanged" Count="@((_table.GetFilteredItemsCount() + _table.RowsPerPage - 1) / _table.RowsPerPage)" Class="pa-4" />
+    </PagerContent>
+</MudTable>
+
+
+@code {
+    private string searchString = "";
+    private int count;
+    private Project project = new();
+    private ProjectAssessment assessment = new ProjectAssessment();
+    private Student student = new Student();
+    private IEnumerable<ProjectAssessment> assessments = new List<ProjectAssessment>();
+    private IEnumerable<Student> students = new List<Student>();
+    //IFileListEntry file;
+    IEnumerable<Project> projects = new List<Project>();
+    [CascadingParameter] Task<AuthenticationState> authenticationState { get; set; }
+    ClaimsPrincipal claimsPrincipal = new();
+    protected override async Task OnInitializedAsync()
+    {
+        claimsPrincipal = (await authenticationState).User;
+        await LoadData();
+    }
+    string marker;
+    async Task LoadData()
+    {
+        if (claimsPrincipal.Identity.IsAuthenticated)
+        {
+            editing = false;
+            assessment = new();
+            project = new();
+            project.Student = new();
+            projects = projectService.GetProjectDetails();
+            assessments = projects.SelectMany(p => p.Assessments);
+            if (claimsPrincipal.IsInRole("Supervisor"))
+            {
+                marker = supervisorService.GetName(claimsPrincipal.Identity.Name);
+            }
+            else if (claimsPrincipal.IsInRole("Coordinator"))
+            {
+                marker = coordinatorService.GetName(claimsPrincipal.Identity.Name);
+            }
+            else
+            {
+                Navigation.NavigateTo("login");
+            }
+            StateHasChanged();
+        }
+
+    }
+    private bool Search(ProjectAssessment project)
+    {
+        if (string.IsNullOrWhiteSpace(searchString)) return true;
+        if (project.Project.ProjectName.Contains(searchString, StringComparison.OrdinalIgnoreCase)
+            || project.Project.Keywords.Contains(searchString, StringComparison.OrdinalIgnoreCase)
+            || project.Project.Student.FirstName.Contains(searchString, StringComparison.OrdinalIgnoreCase)
+            || project.Project.ProjectDescritpion.Contains(searchString, StringComparison.OrdinalIgnoreCase)
+            || project.Project.Student.LastName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+        return false;
+    }
+
+
+    private async void Add()
+    {
+        assessment.Date = DateTime.Now;
+        assessment.MarkedBy = marker;
+        if (project.Assessments ==null)
+        {
+            project.Assessments = new();
+        }
+        else
+        {   
+            if (project.Assessments.Any(a => a.MarkedBy==marker))
+            {
+                snackBar.Add("You have already marked this student.", Severity.Error);
+                return;
+            }
+        }
+        project.Assessments.Add(assessment);
+        if (projectService.Update(project))
+        {
+            snackBar.Add("Assessment Saved.", Severity.Success);
+            await LoadData();
+        }
+        else
+        {
+            snackBar.Add("Something went wrong while trying to add your assessment.", Severity.Error);
+        }
+    }
+
+    bool editing;
+    private void Update(ProjectAssessment record)
+    {
+        assessment = record;
+        project = assessment.Project;
+        editing = true;
+        StateHasChanged();
+    }
+
+    private async Task Delete(ProjectAssessment record)
+    {
+
+    }
+
+
+    private MudTable<ProjectAssessment> _table;
+
+    private void PageChanged(int i)
+    {
+        _table.NavigateTo(i - 1);
+    }
+
+}

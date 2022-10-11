@@ -1,0 +1,138 @@
+﻿@page "/courses"
+@using ProjectManagementSystem.Models
+@using System
+@using System.Linq
+@using static MudBlazor.CategoryTypes
+@inject MudBlazor.ISnackbar snackBar
+@inject IDialogService DialogService
+@inject IJSRuntime JsRuntime
+@attribute [Authorize]
+
+<AuthorizeView Context="AuthContext" Roles="Coordinator, Supervisor, Administrator">
+    <Authorized>
+<h3>Courses</h3>
+<MudCard Elevation="25">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">Add / Edit Courses</MudText>
+            <MudText Typo="Typo.h6">Count: @count</MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudTextField @bind-Value="course.CourseName" Label="Name Of Course" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+        <MudTextField @bind-Value="course.CourseCode" Label="Enter Course Code" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+        <MudSelect T="int" Label="Select Programme" @bind-Value="course.ProgrammeId">
+            @foreach (var programme in programmes)
+            {
+                <MudSelectItem T="int" Value="@programme.ProgrammeId">@programme.ProgrammeName</MudSelectItem>
+            }
+        </MudSelect>
+        <br />
+        <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="Add">Add Course</MudButton>
+    </MudCardContent>
+</MudCard>
+<br />
+</Authorized>
+</AuthorizeView>
+
+<MudTable RowsPerPage="5" @ref="@_table" Hover="true" Breakpoint="Breakpoint.Sm" LoadingProgressColor="Color.Info" Style="color: white" Elevation="25" Items="GetAll()" Filter="new Func<Course, bool>(Search)" @bind-course="course">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Course</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="searchString" Placeholder="Search for Courses..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Course</MudTh>
+        <MudTh>Course Code</MudTh>
+        <MudTh>Programme</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Course">@context.CourseName</MudTd>
+        <MudTd DataLabel="Course Code">@context.CourseCode</MudTd>
+        <MudTd DataLabel="Programme">@context.Programme.ProgrammeName</MudTd>
+        <MudTd DataLabel="Actions">
+            <MudFab @onclick="@(()=>Update(context))" Color="Color.Primary" Icon="@Icons.Material.Filled.Edit" Size="Size.Small" IconSize="Size.Small" />
+            <MudFab @onclick="@(()=>Delete(context))" Color="Color.Secondary" Icon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small" />
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudPagination ShowFirstButton="true" ShowLastButton="true" SelectedChanged="PageChanged" Count="@((_table.GetFilteredItemsCount() + _table.RowsPerPage - 1) / _table.RowsPerPage)" Class="pa-4" />
+    </PagerContent>
+</MudTable>
+
+
+@code {
+    private string searchString = "";
+    private int count;
+    private Course course = new Course();
+    private Programme programme = new Programme();
+    private IEnumerable<Course> courses = new List<Course>();
+    private IEnumerable<Programme> programmes = new List<Programme>();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        programmes = programmeService.GetProgrammeDetails();
+        courses = courseService.GetCourseDetails();
+        count = courses.Count();
+    }
+
+    private bool Search(Course course)
+    {
+        if (string.IsNullOrWhiteSpace(searchString)) return true;
+        if (course.Programme.ProgrammeName.Contains(searchString, StringComparison.OrdinalIgnoreCase)
+            ||course.CourseName.Contains(searchString, StringComparison.OrdinalIgnoreCase)
+            ||course.CourseCode.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private IEnumerable<Course> GetAll()
+    {
+        courses = courseService.GetAll();
+        return courses;
+    }
+
+    private void Add()
+    {
+        if(course.CourseId == 0)
+        {
+            courseService.Add(course);
+        }
+        else
+        {
+            courseService.Update(course);
+        }
+        course = new Course();
+        snackBar.Add("Course Added.", Severity.Success);
+        GetAll();
+    }
+
+    private void Update(Course record)
+    {
+        course = record;
+        StateHasChanged();
+    }
+
+    private async Task Delete(Course record)
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure?");
+        if (confirmed)
+        {
+            courseService.Delete(record);
+            snackBar.Add("Course Deleted.", Severity.Success);
+            GetAll();
+        }
+    }
+
+    private MudTable<Course> _table;
+
+    private void PageChanged(int i)
+    {
+        _table.NavigateTo(i - 1);
+    }
+
+}

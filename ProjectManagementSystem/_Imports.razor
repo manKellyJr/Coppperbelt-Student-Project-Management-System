@@ -1,0 +1,29 @@
+﻿@using System.Net.Http
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.JSInterop
+@using ProjectManagementSystem
+@using ProjectManagementSystem.Interfaces
+@using ProjectManagementSystem.Services
+@using ProjectManagementSystem.Shared
+@using ProjectManagementSystem.Models
+@using MudBlazor
+@inject SchoolService schoolService
+@inject ProjectService projectService
+@inject DepartmentService departmentService
+@inject CourseService courseService
+@inject GroupService groupService
+@inject CoordinatorService coordinatorService
+@inject ProgrammeService programmeService
+@inject SupervisorService supervisorService
+@inject NavigationManager Navigation
+@inject StudentService studentService
+@inject ISnackbar   snackBar
+@inject IUserService userService
+@inject IWebHostEnvironment env
+@inject IJSRuntime javaScript

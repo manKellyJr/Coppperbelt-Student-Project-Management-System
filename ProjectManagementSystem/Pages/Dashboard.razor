@@ -1,0 +1,155 @@
+﻿@page "/dashboard"
+@using ProjectManagementSystem.Models
+@using System
+@using System.Linq
+@using static MudBlazor.CategoryTypes
+@*@using BlazorInputFile*@
+@inject MudBlazor.ISnackbar snackBar
+@inject IDialogService DialogService
+@inject IJSRuntime JsRuntime
+
+
+<MudText Typo="Typo.h5" Color="Color.Primary" Class="mb-4">Dashboard</MudText>
+<MudGrid>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="d-flex flex-row pt-6 pb-4" Style="height:100px;">
+            <MudIcon Icon="@Icons.Material.Filled.Work" Color="Color.Primary" Class="mx-4" Style="width:54px; height:54px;"></MudIcon>
+            <div>
+                <MudText Typo="Typo.subtitle1" Class="mud-text-secondary mb-n1">Projects:</MudText>
+                <MudText Typo="Typo.h5">@countProjects</MudText>
+            </div>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="d-flex flex-row pt-6 pb-4" Style="height:100px;">
+            <MudIcon Icon="@Icons.Material.Filled.Album" Color="Color.Primary" Class="mx-4" Style="width:54px; height:54px;"></MudIcon>
+            <div>
+                <MudText Typo="Typo.subtitle1" Class="mud-text-secondary mb-n1">Programmes:</MudText>
+                <MudText Typo="Typo.h5">@countProgrammes</MudText>
+            </div>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="d-flex flex-row pt-6 pb-4" Style="height:100px;">
+            <MudIcon Icon="@Icons.Material.Filled.Deck" Color="Color.Primary" Class="mx-4" Style="width:54px; height:54px;"></MudIcon>
+            <div>
+                <MudText Typo="Typo.subtitle1" Class="mud-text-secondary mb-n1">Departments:</MudText>
+                <MudText Typo="Typo.h5">@countDepartments</MudText>
+            </div>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="d-flex flex-row pt-6 pb-4" Style="height:100px;">
+            <MudIcon Icon="@Icons.Material.Filled.Layers" Color="Color.Secondary" Class="mx-4" Style="width:54px; height:54px;"></MudIcon>
+            <div>
+                <MudText Typo="Typo.subtitle1" Class="mud-text-secondary mb-n1">Students: </MudText>
+                <MudText Typo="Typo.h5">@countStudents</MudText>
+            </div>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="d-flex flex-row pt-6 pb-4" Style="height:100px;">
+            <MudIcon Icon="@Icons.Material.Filled.Public" Color="Color.Success" Class="mx-4" Style="width:54px; height:54px;"></MudIcon>
+            <div>
+                <MudText Typo="Typo.subtitle1" Class="mud-text-secondary mb-n1">Groups:</MudText>
+                <MudText Typo="Typo.h5">@countGroups</MudText>
+            </div>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="d-flex flex-row pt-6 pb-4" Style="height:100px;">
+            <MudIcon Icon="@Icons.Material.Filled.Public" Color="Color.Success" Class="mx-4" Style="width:54px; height:54px;"></MudIcon>
+            <div>
+                <MudText Typo="Typo.subtitle1" Class="mud-text-secondary mb-n1">Schools:</MudText>
+                <MudText Typo="Typo.h5">@countSchools</MudText>
+            </div>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="d-flex flex-row pt-6 pb-4" Style="height:100px;">
+            <MudIcon Icon="@Icons.Custom.Uncategorized.Radioactive" Color="Color.Warning" Class="mx-4" Style="width:54px; height:54px;"></MudIcon>
+            <div>
+                <MudText Typo="Typo.subtitle1" Class="mud-text-secondary mb-n1">Courses:</MudText>
+                <MudText Typo="Typo.h5">@countCourses</MudText>
+            </div>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="d-flex flex-row pt-6 pb-4" Style="height:100px;">
+            <MudIcon Icon="@Icons.Custom.Uncategorized.Radioactive" Color="Color.Warning" Class="mx-4" Style="width:54px; height:54px;"></MudIcon>
+            <div>
+                <MudText Typo="Typo.subtitle1" Class="mud-text-secondary mb-n1">Year:</MudText>
+                <MudText Typo="Typo.h5">@AcademicYear</MudText>
+            </div>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+
+
+@code {
+    private int schoolCount;
+    private int countProjects;
+    private int AcademicYear = 2022;
+    private int countStudents;
+    private int countGroups;
+    private int countProgrammes;
+    private int countSupervisors;
+    private int countDepartments;
+    private int countCourses;
+    private int countSchools;
+
+    private School school = new School();
+    private Project project = new Project();
+    private Student student = new Student();
+    private Department department = new Department();
+    private Programme programme = new Programme();
+    private Course course = new Course();
+    private IEnumerable<School> schools = new List<School>();
+    private IEnumerable<Student> students = new List<Student>();
+    private IEnumerable<Project> projects = new List<Project>();
+    private IEnumerable<Group> groups = new List<Group>();
+    private IEnumerable<Programme> programmes = new List<Programme>();
+    private IEnumerable<Department> departments = new List<Department>();
+    private IEnumerable<Course> courses = new List<Course>();
+    private IEnumerable<Supervisor> supervisors = new List<Supervisor>();
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        schools = schoolService.GetAll();
+        departments = departmentService.GetAll();
+        programmes = programmeService.GetAll();
+        courses = courseService.GetAll();
+        projects = projectService.GetAll();
+        students = studentService.GetAll();
+        groups = groupService.GetAll();
+
+        countProgrammes = programmes.Count(); ;
+        countProjects = projects.Count();
+        schoolCount = schools.Count();
+        countStudents = students.Count();
+        countGroups = groups.Count();
+        countSupervisors = supervisors.Count();
+        countDepartments = departments.Count();
+        countCourses = courses.Count();
+
+    }
+
+    EarningReport[] earningReports = new EarningReport[]
+    {
+        new EarningReport { Name = "Lunees", Title = "Reactor Engineer", Avatar = "https://avatars2.githubusercontent.com/u/71094850?s=460&u=66c16f5bb7d27dc751f6759a82a3a070c8c7fe4b&v=4", Salary = "$0.99", Severity = Color.Success, SeverityTitle = "Low"},
+        new EarningReport { Name = "Mikes-gh", Title = "Developer", Avatar = "https://avatars.githubusercontent.com/u/16208742?s=120&v=4", Salary = "$19.12K", Severity = Color.Secondary, SeverityTitle = "Medium"},
+        new EarningReport { Name = "Garderoben", Title = "CSS Magician", Avatar = "https://avatars2.githubusercontent.com/u/10367109?s=460&amp;u=2abf95f9e01132e8e2915def42895ffe99c5d2c6&amp;v=4", Salary = "$1337", Severity = Color.Primary, SeverityTitle = "High"},
+    };
+
+    class EarningReport
+    {
+        public string Avatar;
+        public string Name;
+        public string Title;
+        public Color Severity;
+        public string SeverityTitle;
+        public string Salary;
+    }
+}

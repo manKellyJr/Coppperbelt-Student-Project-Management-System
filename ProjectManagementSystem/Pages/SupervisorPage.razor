@@ -1,0 +1,138 @@
+﻿@page "/supervisors"
+@using ProjectManagementSystem.Models
+@using System
+@using System.Linq
+@using static MudBlazor.CategoryTypes
+@inject MudBlazor.ISnackbar snackBar
+@inject IDialogService DialogService
+@inject IJSRuntime JsRuntime
+@attribute [Authorize]
+
+<AuthorizeView Context="AuthContext" Roles="Coordinator, Administrator">
+    <Authorized>
+<h3>Supervisors</h3>
+<MudCard Elevation="25">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">Add / Edit Supervisors</MudText>
+            <MudText Typo="Typo.h6">Count: @count</MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudTextField @bind-Value="supervisor.FirstName" Label="First Name" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+        <MudTextField @bind-Value="supervisor.LastName" Label="Last Name" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+        <MudTextField @bind-Value="supervisor.SupervisorManNumber" Label="Man Number" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+        <MudTextField @bind-Value="email" Label="Email" InputMode="InputMode.email" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+        <br />
+        <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="Add">Add Supervisor</MudButton>
+    </MudCardContent>
+</MudCard>
+<br />
+
+<MudTable RowsPerPage="5" @ref="@_table" Hover="true" Breakpoint="Breakpoint.Sm" LoadingProgressColor="Color.Info" Style="color: white" Elevation="25" Items="GetAll()" Filter="new Func<Supervisor, bool>(Search)" @bind-supervisor="supervisor">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Supervisors</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="searchString" Placeholder="Search for Supervisor..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Name</MudTh>
+        <MudTh>Man Number</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Name">@context.SupervisorName</MudTd>
+        <MudTd DataLabel="Man Number">@context.SupervisorManNumber</MudTd>
+        <MudTd DataLabel="Actions">
+            <MudFab @onclick="@(()=>Update(context))" Color="Color.Primary" Icon="@Icons.Material.Filled.Edit" Size="Size.Small" IconSize="Size.Small" />
+            <MudFab @onclick="@(()=>Delete(context))" Color="Color.Secondary" Icon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small" />
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudPagination ShowFirstButton="true" ShowLastButton="true" SelectedChanged="PageChanged" Count="@((_table.GetFilteredItemsCount() + _table.RowsPerPage - 1) / _table.RowsPerPage)" Class="pa-4" />
+    </PagerContent>
+</MudTable>
+</Authorized>
+</AuthorizeView>
+
+
+@code {
+    private string searchString = "";
+    private int count;
+    private Supervisor supervisor = new Supervisor();
+    private IEnumerable<Supervisor> supervisors = new List<Supervisor>();
+    string email;
+
+    protected override async Task OnInitializedAsync()
+    {
+        supervisors = supervisorService.GetAll();
+        count = supervisors.Count();
+    }
+
+    private bool Search(Supervisor supervisor)
+    {
+        if (string.IsNullOrWhiteSpace(searchString)) return true;
+        if (supervisor.SupervisorName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private IEnumerable<Supervisor> GetAll()
+    {
+        supervisors = supervisorService.GetAll();
+        return supervisors;
+    }
+
+    private async void Add()
+    {
+        if (string.IsNullOrEmpty(email))
+        {
+            snackBar.Add("email is required.", Severity.Error);
+            return;
+        }
+        var user = new RegisterRequest
+        {
+            Email = email,
+            UserName = email,
+            Password = "test1234",
+            Role = "Supervisor"
+
+        };
+        var id = await userService.AddUser(user);
+        if (id > 0)
+        {
+            supervisor.UserId = id;
+            supervisorService.Add(supervisor);
+            supervisor = new Supervisor();
+            snackBar.Add("Supervisor Added.", Severity.Success);
+            GetAll();
+        }
+    }
+
+    private void Update(Supervisor record)
+    {
+        supervisor = record;
+        StateHasChanged();
+    }
+
+    private async Task Delete(Supervisor record)
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure?");
+        if (confirmed)
+        {
+            supervisorService.Delete(record);
+            snackBar.Add("Supervisor Deleted.", Severity.Success);
+            GetAll();
+        }
+    }
+
+    private MudTable<Supervisor> _table;
+
+    private void PageChanged(int i)
+    {
+        _table.NavigateTo(i - 1);
+    }
+
+}
